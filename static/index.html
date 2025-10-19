@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fast Track - AI Customer Support</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo">
+                <h1>Fast Track</h1>
+                <p class="tagline">Communication & Support</p>
+            </div>
+            <div class="header-actions">
+                <button id="clearChatBtn" class="btn-secondary">Clear Chat</button>
+                <button id="statsBtn" class="btn-secondary">Stats</button>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Sidebar -->
+            <aside class="sidebar">
+                <div class="sidebar-content">
+                    <h3>Quick Actions</h3>
+
+                    <div class="action-section">
+                        <h4>Knowledge Base</h4>
+                        <button id="indexKbBtn" class="btn-primary">Index KB Folder</button>
+                        <button id="uploadBtn" class="btn-secondary">Upload PDF</button>
+                        <input type="file" id="fileInput" accept=".pdf" style="display: none;">
+                    </div>
+
+                    <div class="action-section">
+                        <h4>Common Questions</h4>
+                        <div class="quick-questions">
+                            <button class="quick-question">What are your shipping rates?</button>
+                            <button class="quick-question">How do I track my package?</button>
+                            <button class="quick-question">What areas do you deliver to?</button>
+                            <button class="quick-question">How do I schedule a pickup?</button>
+                        </div>
+                    </div>
+
+                    <div class="stats-display" id="statsDisplay">
+                        <h4>System Stats</h4>
+                        <div class="stat-item">
+                            <span class="stat-label">Documents:</span>
+                            <span class="stat-value" id="totalDocs">-</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Index Size:</span>
+                            <span class="stat-value" id="indexSize">-</span>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Chat Area -->
+            <section class="chat-section">
+                <div class="chat-container">
+                    <div id="chatMessages" class="chat-messages">
+                        <!-- Welcome Message -->
+                        <div class="message assistant-message">
+                            <div class="message-avatar">AI</div>
+                            <div class="message-content">
+                                <p>Hello! I'm the Fast Track AI assistant. How can I help you today?</p>
+                                <p>You can ask me about:</p>
+                                <ul>
+                                    <li>Shipping rates and delivery times</li>
+                                    <li>Package tracking</li>
+                                    <li>Service areas</li>
+                                    <li>Pickup scheduling</li>
+                                    <li>And more!</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Input Area -->
+                    <div class="chat-input-container">
+                        <form id="chatForm">
+                            <textarea
+                                id="messageInput"
+                                placeholder="Type your question here..."
+                                rows="2"
+                                required
+                            ></textarea>
+                            <button type="submit" id="sendBtn" class="btn-send">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                                    <path d="M22 2L11 13M22 2L15 22L11 13M22 2L2 9L11 13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay" style="display: none;">
+        <div class="loading-spinner"></div>
+        <p id="loadingText">Processing...</p>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast"></div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>

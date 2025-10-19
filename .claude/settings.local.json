@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cat \"f:\\Work\\FastTrack\\fasttrack_agent\\agent_type.md\")",
+      "Bash(mkdir -p kb vector_store uploads static src)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

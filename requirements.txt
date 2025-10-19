@@ -1,0 +1,33 @@
+# FastAPI and Web Server
+fastapi==0.115.0
+uvicorn[standard]==0.32.0
+python-multipart==0.0.12
+aiofiles==24.1.0
+
+# Azure OpenAI
+openai==1.54.3
+azure-identity==1.19.0
+
+# Document Processing
+docling==2.13.0
+docling-core==2.7.1
+pypdf==5.1.0
+
+# Vector Store and Embeddings
+faiss-cpu==1.9.0
+numpy==1.26.4
+scikit-learn==1.5.2
+
+# Text Processing and Retrieval
+sentence-transformers==3.3.1
+rank-bm25==0.2.2
+tiktoken==0.8.0
+
+# Environment and Configuration
+python-dotenv==1.0.1
+pydantic==2.10.2
+pydantic-settings==2.6.1
+
+# Utilities
+tqdm==4.67.1
+requests==2.32.3
