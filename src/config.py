@@ -42,7 +42,7 @@ class Settings(BaseSettings):
     TEMPERATURE: float = 0.7
 
     # API Configuration
-    HOST: str = "0.0.0.0"
+    HOST: str = "127.0.0.1"
     PORT: int = 8000
 
     class Config:
