@@ -35,19 +35,20 @@ class Settings(BaseSettings):
     CHUNK_OVERLAP: int = 128
     TOP_K_RETRIEVAL: int = 10
     TOP_K_RERANK: int = 5
-    SIMILARITY_THRESHOLD: float = 0.7
+    SIMILARITY_THRESHOLD: float = 0.3  # Lowered from 0.7 to allow more results
 
     # LLM Configuration
     MAX_TOKENS: int = 2000
     TEMPERATURE: float = 0.7
 
     # API Configuration
-    HOST: str = "0.0.0.0"
+    HOST: str = "127.0.0.1"
     PORT: int = 8000
 
     class Config:
         env_file = ".env"
         case_sensitive = True
+        extra = "ignore"  # Ignore extra fields in .env file
 
 # Create settings instance
 settings = Settings()

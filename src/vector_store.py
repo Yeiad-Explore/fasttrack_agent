@@ -155,13 +155,93 @@ class FAISSVectorStore:
         self.documents = []
         print("Cleared vector store")
 
+    def is_file_indexed(self, file_path: str) -> bool:
+        """
+        Check if a file is already indexed in the vector store
+
+        Args:
+            file_path: Path to the file to check
+
+        Returns:
+            True if file is already indexed, False otherwise
+        """
+        for doc in self.documents:
+            if doc.get("metadata", {}).get("file_path") == file_path:
+                return True
+        return False
+
+    def get_indexed_files(self) -> List[str]:
+        """
+        Get list of all indexed file paths
+
+        Returns:
+            List of file paths that are indexed
+        """
+        indexed_files = set()
+        for doc in self.documents:
+            file_path = doc.get("metadata", {}).get("file_path")
+            if file_path:
+                indexed_files.add(file_path)
+        return sorted(list(indexed_files))
+
+    def remove_file(self, file_path: str) -> int:
+        """
+        Remove all chunks from a specific file
+
+        Args:
+            file_path: Path to the file to remove
+
+        Returns:
+            Number of chunks removed
+        """
+        # Find indices to keep
+        indices_to_keep = []
+        new_documents = []
+
+        for i, doc in enumerate(self.documents):
+            if doc.get("metadata", {}).get("file_path") != file_path:
+                indices_to_keep.append(i)
+                new_documents.append(doc)
+
+        if len(indices_to_keep) == len(self.documents):
+            print(f"File not found in index: {file_path}")
+            return 0
+
+        # Rebuild index with remaining documents
+        removed_count = len(self.documents) - len(new_documents)
+
+        if len(new_documents) == 0:
+            # Clear everything
+            self.clear()
+        else:
+            # Rebuild index (FAISS doesn't support deletion, so we rebuild)
+            print(f"Rebuilding index after removing {removed_count} chunks...")
+            self.clear()
+            # Note: This requires re-embedding, which we can't do here
+            # This method is a placeholder for future implementation
+            raise NotImplementedError(
+                "Removing individual files requires re-embedding. "
+                "Use clear_index() and re-ingest instead."
+            )
+
+        return removed_count
+
     def get_stats(self) -> Dict[str, Any]:
         """Get statistics about the vector store"""
+        indexed_files = self.get_indexed_files()
+        file_types = {}
+        for doc in self.documents:
+            file_type = doc.get("metadata", {}).get("file_type", "unknown")
+            file_types[file_type] = file_types.get(file_type, 0) + 1
+
         return {
             "total_documents": len(self.documents),
+            "total_files": len(indexed_files),
             "index_size": self.index.ntotal if self.index else 0,
             "dimension": self.dimension,
-            "index_type": type(self.index).__name__ if self.index else None
+            "index_type": type(self.index).__name__ if self.index else None,
+            "file_types": file_types,
+            "indexed_files": indexed_files
         }
 
 

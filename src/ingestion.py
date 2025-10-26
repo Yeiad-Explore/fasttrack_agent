@@ -1,6 +1,6 @@
 """
 Document ingestion pipeline using Docling
-Processes PDF documents and prepares them for indexing
+Processes PDF and Markdown documents and prepares them for indexing
 """
 
 import os
@@ -16,11 +16,31 @@ from vector_store import vector_store
 
 
 class DocumentIngestionPipeline:
-    """Pipeline for ingesting and indexing PDF documents"""
+    """Pipeline for ingesting and indexing PDF and Markdown documents"""
 
     def __init__(self):
         """Initialize the ingestion pipeline"""
         self.converter = DocumentConverter()
+        self.supported_extensions = {'.pdf', '.md', '.markdown'}
+
+    def process_markdown(self, md_path: Path) -> str:
+        """
+        Read markdown file directly
+
+        Args:
+            md_path: Path to markdown file
+
+        Returns:
+            Markdown content
+        """
+        try:
+            print(f"Processing Markdown: {md_path.name}")
+            with open(md_path, 'r', encoding='utf-8') as f:
+                text = f.read()
+            return text
+        except Exception as e:
+            print(f"Error processing Markdown {md_path.name}: {e}")
+            raise
 
     def process_pdf(self, pdf_path: Path) -> str:
         """
@@ -44,29 +64,56 @@ class DocumentIngestionPipeline:
             print(f"Error processing PDF {pdf_path.name}: {e}")
             raise
 
-    def ingest_document(self, pdf_path: Path) -> int:
+    def detect_and_process_file(self, file_path: Path) -> tuple[str, str]:
         """
-        Ingest a single PDF document
+        Auto-detect file type and process accordingly
 
         Args:
-            pdf_path: Path to PDF file
+            file_path: Path to file
+
+        Returns:
+            Tuple of (text_content, file_type)
+        """
+        file_ext = file_path.suffix.lower()
+
+        if file_ext == '.pdf':
+            text = self.process_pdf(file_path)
+            return text, 'pdf'
+        elif file_ext in {'.md', '.markdown'}:
+            text = self.process_markdown(file_path)
+            return text, 'markdown'
+        else:
+            raise ValueError(f"Unsupported file type: {file_ext}")
+
+    def ingest_document(self, file_path: Path, check_duplicate: bool = True) -> int:
+        """
+        Ingest a single document (PDF or Markdown)
+
+        Args:
+            file_path: Path to file
+            check_duplicate: Whether to check for existing file in vector store
 
         Returns:
             Number of chunks created
         """
-        # Extract text
-        text = self.process_pdf(pdf_path)
+        # Check for duplicates if enabled
+        if check_duplicate and vector_store.is_file_indexed(str(file_path)):
+            print(f"⚠️  File already indexed: {file_path.name} (skipping)")
+            return 0
+
+        # Auto-detect and extract text
+        text, file_type = self.detect_and_process_file(file_path)
 
         # Create metadata
         metadata = {
-            "source": pdf_path.name,
-            "file_path": str(pdf_path),
-            "file_type": "pdf"
+            "source": file_path.name,
+            "file_path": str(file_path),
+            "file_type": file_type
         }
 
         # Chunk the document
         chunks = chunker.create_chunks(text, metadata)
-        print(f"Created {len(chunks)} chunks from {pdf_path.name}")
+        print(f"Created {len(chunks)} chunks from {file_path.name}")
 
         # Generate embeddings
         chunk_texts = [chunk["text"] for chunk in chunks]
@@ -80,12 +127,13 @@ class DocumentIngestionPipeline:
 
         return len(chunks)
 
-    def ingest_directory(self, directory: Path = None) -> Dict[str, Any]:
+    def ingest_directory(self, directory: Path = None, check_duplicate: bool = True) -> Dict[str, Any]:
         """
-        Ingest all PDF files from a directory
+        Ingest all supported files (PDF, Markdown) from a directory
 
         Args:
-            directory: Directory containing PDFs (defaults to KB_DIR)
+            directory: Directory containing files (defaults to KB_DIR)
+            check_duplicate: Whether to skip already indexed files
 
         Returns:
             Statistics about ingestion
@@ -93,36 +141,54 @@ class DocumentIngestionPipeline:
         if directory is None:
             directory = settings.KB_DIR
 
-        # Find all PDF files
-        pdf_files = list(directory.glob("*.pdf"))
+        # Find all supported files
+        all_files = []
+        for ext in self.supported_extensions:
+            all_files.extend(directory.glob(f"*{ext}"))
 
-        if not pdf_files:
-            print(f"No PDF files found in {directory}")
+        if not all_files:
+            print(f"No supported files found in {directory}")
+            print(f"Supported extensions: {', '.join(self.supported_extensions)}")
             return {
                 "total_files": 0,
                 "total_chunks": 0,
-                "files_processed": []
+                "files_processed": [],
+                "skipped_duplicates": 0
             }
 
-        print(f"Found {len(pdf_files)} PDF files to process")
+        print(f"Found {len(all_files)} files to process")
+        print(f"File types: {', '.join([f.suffix for f in all_files])}")
 
-        # Process each PDF
+        # Process each file
         total_chunks = 0
         files_processed = []
+        skipped_count = 0
 
-        for pdf_path in tqdm(pdf_files, desc="Ingesting PDFs"):
+        for file_path in tqdm(all_files, desc="Ingesting files"):
             try:
-                num_chunks = self.ingest_document(pdf_path)
-                total_chunks += num_chunks
-                files_processed.append({
-                    "filename": pdf_path.name,
-                    "chunks": num_chunks,
-                    "status": "success"
-                })
+                num_chunks = self.ingest_document(file_path, check_duplicate=check_duplicate)
+
+                if num_chunks == 0 and check_duplicate:
+                    # File was skipped due to duplicate
+                    skipped_count += 1
+                    files_processed.append({
+                        "filename": file_path.name,
+                        "chunks": 0,
+                        "status": "skipped",
+                        "reason": "already_indexed"
+                    })
+                else:
+                    total_chunks += num_chunks
+                    files_processed.append({
+                        "filename": file_path.name,
+                        "chunks": num_chunks,
+                        "file_type": file_path.suffix,
+                        "status": "success"
+                    })
             except Exception as e:
-                print(f"Failed to process {pdf_path.name}: {e}")
+                print(f"Failed to process {file_path.name}: {e}")
                 files_processed.append({
-                    "filename": pdf_path.name,
+                    "filename": file_path.name,
                     "chunks": 0,
                     "status": "failed",
                     "error": str(e)
@@ -132,9 +198,10 @@ class DocumentIngestionPipeline:
         vector_store.save()
 
         return {
-            "total_files": len(pdf_files),
+            "total_files": len(all_files),
             "total_chunks": total_chunks,
-            "files_processed": files_processed
+            "files_processed": files_processed,
+            "skipped_duplicates": skipped_count
         }
 
     def clear_index(self):
